@@ -39,7 +39,8 @@ Library
     parsec >= 2.0,
     mtl >= 1.0,
     MonadCatchIO-mtl,
-    xhtml >= 3000.0.0
+    xhtml >= 3000.0.0,
+    utf8-string >= 0.3.7
   If flag(split-base)
     Build-depends: base >= 3 && < 5, old-time, old-locale, containers
   Else

@@ -41,9 +41,9 @@ import Network.URI (unEscapeString,escapeURIString,isUnescapedInURI)
 import System.Environment (getEnvironment)
 import System.IO (Handle, hPutStrLn, stderr, hFlush, hSetBinaryMode)
 
-import qualified Data.ByteString.Lazy.Char8 as BS
-import Data.ByteString.Lazy.Char8 (ByteString)
-
+import qualified Data.ByteString.Lazy as BS
+import qualified Data.ByteString.Lazy.UTF8 as BU
+import Data.ByteString.Lazy.UTF8 (ByteString)
 #if MIN_VERSION_base(4,7,0)
 import Data.Typeable
 #else
@@ -146,9 +146,9 @@ formatResponse :: ByteString -> Headers -> ByteString
 formatResponse c hs = 
     -- NOTE: we use CRLF since lighttpd mod_fastcgi can't handle
     -- just LF if there are CRs in the content.
-    unlinesCrLf ([BS.pack (n++": "++v) | (HeaderName n,v) <- hs] 
+    unlinesCrLf ([BU.fromString (n++": "++v) | (HeaderName n,v) <- hs] 
                 ++ [BS.empty,c])
-  where unlinesCrLf = BS.concat . intersperse (BS.pack "\r\n")
+  where unlinesCrLf = BS.concat . intersperse (BU.fromString "\r\n")
 
 defaultContentType :: String
 defaultContentType = "text/html; charset=ISO-8859-1"
@@ -171,7 +171,7 @@ decodeInput env inp =
 
 -- | Builds an 'Input' object for a simple value.
 simpleInput :: String -> Input
-simpleInput v = Input { inputValue = BS.pack v,
+simpleInput v = Input { inputValue = BU.fromString v,
                         inputFilename = Nothing,
                         inputContentType = defaultInputType }
 
@@ -261,13 +261,13 @@ decodeBody :: Maybe ContentType
 decodeBody ctype inp = 
     case ctype of
                Just (ContentType "application" "x-www-form-urlencoded" _) 
-                   -> (formInput (BS.unpack inp), BS.empty)
+                   -> (formInput (BU.toString inp), BS.empty)
                Just (ContentType "multipart" "form-data" ps) 
                    -> (multipartDecode ps inp, BS.empty)
                Just _ -> ([], inp) -- unknown content-type, the user will have to
                             -- deal with it by looking at the raw content
                -- No content-type given, assume x-www-form-urlencoded
-               Nothing -> (formInput (BS.unpack inp), BS.empty)
+               Nothing -> (formInput (BU.toString inp), BS.empty)
 
 -- | Takes the right number of bytes from the input.
 takeInput :: [(String,String)]  -- ^ CGI environment variables.
